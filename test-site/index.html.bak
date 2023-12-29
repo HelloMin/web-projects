@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+	<link href="styles/style.css" rel="stylesheet" />
+	<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet" />
+    <title>My test page</title>
+  </head>
+  <body>
+    <h1>Min learn dev</h1>
+    <img src="images/craftman.jpg" alt="My test image" />
+	<p>芝兰生于深谷，不以无人而不芳。</p>
+    <p>君子修身养德，不以穷困而改志。</p>
+	<p>每周至少:</p>
+	<ul>
+	  <li>做一个 leetcode 的算法题</li>
+	  <li>阅读并点评至少一篇英文技术文章</li>
+	  <li>学习至少一个技术技巧</li>
+	  <li>分享一篇有观点和思考的技术文章</li>
+	</ul>
+	<p>也就是:</p>
+	<ol>
+      <li>Algorithm</li>
+      <li>Review</li>
+      <li>Tip</li>
+      <li>Share</li>
+    </ol>
+	<p>简称 ARTS</p>
+	<a href="https://www.mozilla.org/zh-CN/about/manifesto/">Mozilla Manifesto</a>
+	<script src="scripts/main.js" defer></script>
+  </body>
+</html>
