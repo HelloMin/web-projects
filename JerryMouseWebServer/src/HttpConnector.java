@@ -1,21 +1,20 @@
-import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.InetSocketAddress;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
 
-public class SimpleHttpServer implements HttpHandler, AutoCloseable{
+public class HttpConnector implements HttpHandler, AutoCloseable{
     public static void main(String[] args) {
         System.out.println("Hello world!");
         String host="0.0.0.0";
         int port = 8080;
-        try (SimpleHttpServer connector = new SimpleHttpServer(host, port)) {
+        try (HttpConnector connector = new HttpConnector(host, port)) {
             for (;;) {
                 try {
                     Thread.sleep(1000);
@@ -32,7 +31,7 @@ public class SimpleHttpServer implements HttpHandler, AutoCloseable{
     final String host;
     final int port;
 
-    public SimpleHttpServer(String host, int port) throws  IOException {
+    public HttpConnector(String host, int port) throws  IOException {
         this.host = host;
         this.port = port;
         this.httpServer = HttpServer.create(new InetSocketAddress(host, port), 0, "/", this);
@@ -41,21 +40,24 @@ public class SimpleHttpServer implements HttpHandler, AutoCloseable{
     }
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        String method = exchange.getRequestMethod();
-        URI uri = exchange.getRequestURI();
-        String path = uri.getPath();
-        String query = uri.getRawQuery();
-        System.out.println(method + " : " + path + "?" + query);
+        HttpExchangeAdapter adapter = new HttpExchangeAdapter(exchange);
+        HttpServletResponse response = new HttpServletResponseImpl(adapter);
+        HttpServletRequest request = new HttpServletRequestImpl(adapter);
 
-        Headers respHeaders = exchange.getResponseHeaders();
-        respHeaders.set("Content-Type", "text/html; charset=utf-8");
-        respHeaders.set("Cache-Control", "no-cache");
-        exchange.sendResponseHeaders(200, 0);
-        String s = "<h1> Hello, world.</h1><p>" + LocalDateTime.now().withNano(0) + "</p>";
-
-        try (OutputStream out = exchange.getResponseBody()) {
-            out.write(s.getBytes(StandardCharsets.UTF_8));
+        try {
+            process(request, response);
+        } catch (ServletException e) {
+            throw new RuntimeException(e);
         }
+    }
+
+    public void process(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String name = request.getParameter("name");
+        String html = "<h1>Hello, " + (name == null? "world" : name) +"</h1>";
+        response.setContentType("text/html");
+        PrintWriter pw = response.getWriter();
+        pw.write(html);
+        pw.close();
     }
 
     @Override
