@@ -1,3 +1,5 @@
+package connector;
+
 import java.net.URI;
 
 public interface HttpExchangeRequest {

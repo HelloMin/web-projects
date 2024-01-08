@@ -1,6 +1,11 @@
+package connector;
+
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import engine.ServletContextImpl;
+import engine.servlet.HelloServlet;
+import engine.servlet.IndexServlet;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -8,30 +13,19 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
+import java.util.List;
 
 public class HttpConnector implements HttpHandler, AutoCloseable{
-    public static void main(String[] args) {
-        System.out.println("Hello world!");
-        String host="0.0.0.0";
-        int port = 8080;
-        try (HttpConnector connector = new HttpConnector(host, port)) {
-            for (;;) {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    break;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     final HttpServer httpServer;
     final String host;
     final int port;
 
-    public HttpConnector(String host, int port) throws  IOException {
+    final ServletContextImpl servletContext;
+
+    public HttpConnector(String host, int port) throws IOException, ServletException {
+        this.servletContext = new ServletContextImpl();
+        this.servletContext.initialize(List.of(IndexServlet.class, HelloServlet.class));
+        // Start http server
         this.host = host;
         this.port = port;
         this.httpServer = HttpServer.create(new InetSocketAddress(host, port), 0, "/", this);
@@ -43,21 +37,12 @@ public class HttpConnector implements HttpHandler, AutoCloseable{
         HttpExchangeAdapter adapter = new HttpExchangeAdapter(exchange);
         HttpServletResponse response = new HttpServletResponseImpl(adapter);
         HttpServletRequest request = new HttpServletRequestImpl(adapter);
-
+        // process
         try {
-            process(request, response);
+            this.servletContext.process(request, response);
         } catch (ServletException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public void process(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String name = request.getParameter("name");
-        String html = "<h1>Hello, " + (name == null? "world" : name) +"</h1>";
-        response.setContentType("text/html");
-        PrintWriter pw = response.getWriter();
-        pw.write(html);
-        pw.close();
     }
 
     @Override

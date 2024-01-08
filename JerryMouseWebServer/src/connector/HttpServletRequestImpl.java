@@ -1,12 +1,16 @@
+package connector;
+
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.*;
+import java.util.regex.Pattern;
 
 public class HttpServletRequestImpl implements HttpServletRequest {
 
@@ -16,7 +20,10 @@ public class HttpServletRequestImpl implements HttpServletRequest {
         this.exchangeRequest = exchangeRequest;
     }
 
-
+    @Override
+    public String getRequestURI() {
+        return this.exchangeRequest.getRequestURI().getPath();
+    }
     @Override
     public String getParameter(String s) {
         String query = this.exchangeRequest.getRequestURI().getRawQuery();
@@ -25,15 +32,27 @@ public class HttpServletRequestImpl implements HttpServletRequest {
     }
 
     private Map<String, String> parserQuery(String query) {
+        if (query == null || query.isEmpty()) {
+            return  Map.of();
+        }
+        String[] ss = Pattern.compile("\\&").split(query);
         Map<String, String> result = new HashMap<>();
-        String[] params = query.split("&");
-        for (int i = 0; i < params.length; i++) {
-            String[] pair = params[i].split("=");
-            if (pair.length > 1)
-                result.put(pair[0], pair[1]);
+        for (String s : ss) {
+            int n = s.indexOf('=');
+            if (n >= 1) {
+                String key = s.substring(0, n);
+                String value = s.substring(n+1);
+                result.putIfAbsent(key, URLDecoder.decode(value, StandardCharsets.UTF_8));
+            }
         }
         return result;
     }
+
+    @Override
+    public String getMethod() {
+        return exchangeRequest.getRequestMethod();
+    }
+
     @Override
     public String getAuthType() {
         return null;
@@ -67,11 +86,6 @@ public class HttpServletRequestImpl implements HttpServletRequest {
     @Override
     public int getIntHeader(String s) {
         return 0;
-    }
-
-    @Override
-    public String getMethod() {
-        return null;
     }
 
     @Override
@@ -113,12 +127,6 @@ public class HttpServletRequestImpl implements HttpServletRequest {
     public String getRequestedSessionId() {
         return null;
     }
-
-    @Override
-    public String getRequestURI() {
-        return null;
-    }
-
     @Override
     public StringBuffer getRequestURL() {
         return null;
