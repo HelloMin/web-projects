@@ -1,7 +1,10 @@
 package engine;
 
 import engine.mapping.ServletMapping;
+import filter.FilterMapping;
+import filter.FilterRegistrationImpl;
 import jakarta.servlet.*;
+import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.descriptor.JspConfigDescriptor;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,8 +22,10 @@ import java.util.*;
 public class ServletContextImpl implements ServletContext {
     final List<ServletMapping> servletMappings = new ArrayList<>();
     private Map<String, ServletRegistrationImpl> servletRegistrations = new HashMap<>();
-
     final Map<String, Servlet> nameToServlets = new HashMap<>();
+    // Filter
+    Map<String, FilterRegistrationImpl> filterRegistrations = new HashMap<>();
+    List<FilterMapping> filterMappings = new ArrayList<>();
 
     public void initialize(List<Class<?>> servletClasses) throws ServletException {
         // 依次添加每个Servlet:
@@ -93,6 +98,47 @@ public class ServletContextImpl implements ServletContext {
         servlet.service(request, response);
     }
 
+    // Filter
+    public void initFilters(List<Class<?>> filterClasses) {
+        for (Class<?> c : filterClasses) {
+            // 获取@WebFilter注解
+            WebFilter wf = c.getAnnotation(WebFilter.class);
+            Class<? extends  Filter> clazz = (Class<? extends  Filter>) c;
+            // 添加Filter
+            FilterRegistration.Dynamic registration = this.addFilter(AnnoUtils.getFilterName(clazz), clazz);
+            // 添加URL 映射
+            registration.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, AnnoUtils.getFilterUrlPatterns(clazz));
+            registration.setInitParameters(AnnoUtils.getFilterInitParams(clazz));
+        }
+    }
+    @Override
+    public FilterRegistration.Dynamic addFilter(String name, String className) {
+        try {
+            return addFilter(name, (Class<? extends Filter>) Class.forName(className));
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public FilterRegistration.Dynamic addFilter(String name, Class<? extends Filter> clazz) {
+        try {
+            return addFilter(name, clazz.newInstance());
+        } catch (InstantiationException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public FilterRegistration.Dynamic addFilter(String name, Filter filter) {
+        var registration = new FilterRegistrationImpl(this, name, filter);
+        this.filterRegistrations.put(name, registration);
+        return registration;
+    }
+
+    // not implemented:
     @Override
     public String getContextPath() {
         return null;
@@ -235,21 +281,6 @@ public class ServletContextImpl implements ServletContext {
 
     @Override
     public Map<String, ? extends ServletRegistration> getServletRegistrations() {
-        return null;
-    }
-
-    @Override
-    public FilterRegistration.Dynamic addFilter(String s, String s1) {
-        return null;
-    }
-
-    @Override
-    public FilterRegistration.Dynamic addFilter(String s, Filter filter) {
-        return null;
-    }
-
-    @Override
-    public FilterRegistration.Dynamic addFilter(String s, Class<? extends Filter> aClass) {
         return null;
     }
 

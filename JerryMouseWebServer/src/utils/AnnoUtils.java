@@ -1,9 +1,12 @@
 package utils;
 
+import jakarta.servlet.Filter;
 import jakarta.servlet.Servlet;
+import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.annotation.WebInitParam;
 import jakarta.servlet.annotation.WebServlet;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -11,6 +14,29 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class AnnoUtils {
+    public static Map<String, String> getFilterInitParams(Class<? extends Filter> clazz) {
+        WebFilter w = clazz.getAnnotation(WebFilter.class);
+        if (w == null) {
+            return Map.of();
+        }
+        return initParamsToMap(w.initParams());
+    }
+    public static String[] getFilterUrlPatterns(Class<? extends Filter> clazz) {
+        WebFilter w = clazz.getAnnotation(WebFilter.class);
+        if (w == null) {
+            return new String[0];
+        }
+        return arraysToSet(w.value(), w.urlPatterns()).toArray(String[]::new);
+    }
+
+    public static String getFilterName(Class<? extends Filter> clazz) {
+        WebFilter w = clazz.getAnnotation(WebFilter.class);
+        if ( w != null && !w.filterName().isEmpty()) {
+            return w.filterName();
+        }
+        return defaultNameByClass(clazz);
+    }
+
     public static String getServletName(Class<? extends Servlet> clazz) {
         WebServlet w = clazz.getAnnotation(WebServlet.class);
         if (w != null && !w.name().isEmpty()) {
